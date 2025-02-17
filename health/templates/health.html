@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Report Generator</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h2>Health Report Generator</h2>
+
+        <!-- Logout Button -->
+        <button id="logoutBtn">Logout</button>
+
+        <!-- Health Report Form -->
+        <form id="healthForm">
+            <label for="symptoms">Describe your symptoms:</label>
+            <textarea id="symptoms" name="symptoms" required></textarea>
+
+            <label for="medicalHistory">Medical History:</label>
+            <textarea id="medicalHistory" name="medicalHistory" required></textarea>
+
+            <label for="lifestyle">Lifestyle Details:</label>
+            <textarea id="lifestyle" name="lifestyle" required></textarea>
+
+            <label for="description">Additional Description:</label>
+            <textarea id="description" name="description" required></textarea>
+
+            <button type="submit">Generate Report</button>
+        </form>
+
+        <!-- Display Section -->
+        <div id="output"></div>
+        <div id="reportsContainer"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ✅ Redirect to login if user is not authenticated
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = "/login-page/";
+            }
+
+            // ✅ Logout Functionality
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('access_token');
+                window.location.href = "/login-page/";
+            });
+
+            // ✅ Handle Health Report Submission
+
+
+
+            document.getElementById('healthForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+            
+                let formData = {
+                    symptoms: document.getElementById('symptoms').value.trim(),
+                    medical_history: document.getElementById('medicalHistory').value.trim(),
+                    lifestyle: document.getElementById('lifestyle').value.trim(),
+                    description: document.getElementById('description').value.trim()
+                };
+            
+                let token = localStorage.getItem('access_token');
+            
+                if (!token) {
+                    document.getElementById('output').innerHTML = `<p style="color: red;">Not authenticated. Please log in again.</p>`;
+                    return;
+                }
+            
+                try {
+                    let response = await fetch('http://127.0.0.1:8000/api/health-reports/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+            
+                    let data = await response.json();
+            
+                    if (response.ok) {
+                        document.getElementById('output').innerHTML = `<h3>Report Submitted Successfully!</h3>`;
+                        fetchHealthReports();
+                    } else {
+                        console.error("🔴 Submission Error:", data);
+                        document.getElementById('output').innerHTML = `<p style="color: red;">Error: ${JSON.stringify(data)}</p>`;
+                    }
+                } catch (error) {
+                    console.error("🔴 API Error:", error);
+                    document.getElementById('output').innerHTML = `<p style="color: red;">Something went wrong!</p>`;
+                }
+            });
+            
+            
+
+            // ✅ Fetch and Display Health Reports
+            async function submitHealthReport() {
+                let token = localStorage.getItem('access_token');
+            
+                if (!token) {
+                    console.error("🔴 No access token found!");
+                    document.getElementById('output').innerHTML = `<p style="color: red;">Not authenticated. Please log in again.</p>`;
+                    return;
+                }
+            
+                let formData = {
+                    symptoms: document.getElementById('symptoms').value.trim(),
+                    medical_history: document.getElementById('medicalHistory').value.trim(),
+                    lifestyle: document.getElementById('lifestyle').value.trim(),
+                    description: document.getElementById('description').value.trim()
+                };
+            
+                try {
+                    let response = await fetch('http://127.0.0.1:8000/api/health-reports/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`  // ✅ Send token properly
+                        },
+                        body: JSON.stringify(formData)
+                    });
+            
+                    let data = await response.json();
+            
+                    if (response.ok) {
+                        document.getElementById('output').innerHTML = `<h3>Report Submitted Successfully!</h3>`;
+                    } else {
+                        console.error("🔴 Submission Error:", data);
+                        document.getElementById('output').innerHTML = `<p style="color: red;">Error: ${JSON.stringify(data)}</p>`;
+                    }
+                } catch (error) {
+                    console.error("🔴 API Error:", error);
+                    document.getElementById('output').innerHTML = `<p style="color: red;">Something went wrong!</p>`;
+                }
+            }
+            
+            document.getElementById('healthForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                submitHealthReport();
+            });
+            
+
+            // ✅ Fetch reports on page load
+            fetchHealthReports();
+        });
+    </script>
+</body>
+</html>

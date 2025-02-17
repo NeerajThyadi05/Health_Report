@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h2>Login</h2>
+
+        <!-- Login Form -->
+        <form id="loginForm">
+            {% csrf_token %}
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Login</button>
+        </form>
+
+        <p id="loginMessage"></p>
+
+        <p>Don't have an account? <a href="/register-page/">Register here</a></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // If user is already logged in, redirect them to health page
+            if (localStorage.getItem('access_token')) {
+                window.location.href = "/health/";
+            }
+
+            // Handle login submission
+            document.getElementById('loginForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                let email = document.getElementById('email').value.trim();
+                let password = document.getElementById('password').value.trim();
+
+                let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                try {
+                    let response = await fetch('http://127.0.0.1:8000/api/login/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    let data = await response.json();
+
+                    if (response.ok) {
+                        localStorage.setItem('access_token', data.access);
+                        localStorage.setItem('refresh_token', data.refresh);
+
+                        document.getElementById('loginMessage').innerHTML = 
+                            `<p style="color: green;">Login successful! Redirecting...</p>`;
+
+                        setTimeout(() => {
+                            window.location.href = "/health/"; // Redirect to health page
+                        }, 1000);
+                    } else {
+                        document.getElementById('loginMessage').innerHTML = 
+                            `<p style="color: red;">Invalid email or password.</p>`;
+                    }
+                } catch (error) {
+                    console.error("Error logging in:", error);
+                    document.getElementById('loginMessage').innerHTML = 
+                        `<p style="color: red;">Something went wrong! Try again later.</p>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
